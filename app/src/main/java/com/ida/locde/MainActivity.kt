@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -54,65 +55,29 @@ class MainActivity : ComponentActivity() {
             .allowMainThreadQueries()
             .build()
 
+//        db.getDao().add(EntityExample(name = "Umida Reimbaeva",
+//            phoneNumber = "+998913756365"))
+//        db.getDao().add(EntityExample(name = "Anna Kim",
+//            phoneNumber = "+998913756366"))
         setContent {
-            LocDETheme {
-                var name by remember { mutableStateOf("") }
-                var phone by remember { mutableStateOf("") }
-
-                AlertDialog(
-                    onDismissRequest = {},
-                    confirmButton = {
-                        db.getDao().add(
-                            EntityExample(
-                                name = name, phoneNumber = phone
-                            )
-                        )
-                        //closeDialog()
-                    },
-                    dismissButton = {
-                        //closeDialog()
-                    },
-                    text = {
-                        Column() {
-                            OutlinedTextField(
-                                value = name,
-                                onValueChange = {
-                                    name = it
-                                },
-                                label = {
-                                    Text("Name")
-                                }
-                            )
-                            OutlinedTextField(
-                                value = phone,
-                                onValueChange = {
-                                    phone = it
-                                },
-                                label = {
-                                    Text("Phone")
-                                }
-                            )
-                        }
-                    }
-                )
-
-
-
-            }
+          MainUI()
         }
     }
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    fun MainUI(
-        users: List<EntityExample>,
-        showDialog: () -> Unit
-    ) {
-
+    fun MainUI() {
+        var showDialog by remember {
+            mutableStateOf(false)
+        }
+        var users by remember {
+            mutableStateOf(listOf<EntityExample>())
+        }
+        users = db.getDao().getAllDatas()
         Scaffold(
             floatingActionButton = {
                 FloatingActionButton(onClick = {
-                    showDialog()
+                    showDialog = true
                 }) {
                     Text("Add")
                 }
@@ -132,15 +97,21 @@ class MainActivity : ComponentActivity() {
                     .padding(iP)
             ) {
                 items(users) { user ->
-                    Items(user)
+                    Items(user,
+                        {users = db.getDao().getAllDatas()})
                 }
             }
 
         }
+
+        if(showDialog) {
+            AddingDialog({showDialog = false})
+        }
     }
 
     @Composable
-    fun Items(user: EntityExample) {
+    fun Items(user: EntityExample,
+              onUpdate:() -> Unit = {}) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -165,22 +136,12 @@ class MainActivity : ComponentActivity() {
                     .size(40.dp)
                     .padding(8.dp)
                     .clickable {
-
+                        db.getDao().delete(user)
+                        onUpdate()
                     })
 
 
         }
-    }
-
-    @Composable
-    fun UI(users: List<EntityExample>) {
-        var isVisible by remember {
-            mutableStateOf(false)
-        }
-        MainUI(users, {
-            isVisible = true
-        })
-
     }
 
 
@@ -191,17 +152,27 @@ class MainActivity : ComponentActivity() {
         var phone by remember { mutableStateOf("") }
 
         AlertDialog(
-            onDismissRequest = {},
-            confirmButton = {
-                db.getDao().add(
-                    EntityExample(
-                        name = name, phoneNumber = phone
-                    )
-                )
+            onDismissRequest = {
+                //ekran qalegen jerin, programma istemey
                 closeDialog()
             },
+            confirmButton = {
+                Button(onClick = {
+                    db.getDao().add(
+                        EntityExample(
+                            name = name, phoneNumber = phone
+                        )
+                    )
+                    //delete
+                    closeDialog()
+                }) {
+                    Text("Save")
+                }
+            },
             dismissButton = {
-                closeDialog()
+                Text("Cancel", modifier = Modifier.clickable {
+                    closeDialog()
+                })
             },
             text = {
                 Column() {
@@ -231,6 +202,8 @@ class MainActivity : ComponentActivity() {
     }
 
 }
+
+
 
 /*Room kitapxanasi mn
 islegende 3 tiykargi narse bar:
